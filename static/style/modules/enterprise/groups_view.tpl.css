@@ -1,0 +1,6 @@
+body.enterprise div.toptoolbar{
+    top: 20px;
+}
+table.base tr>td:first-child,table.base tr>th:first-child{
+    display: inline-block;
+}

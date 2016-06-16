@@ -1,0 +1,21 @@
+#tree{
+    width: 290px;
+    overflow-x: auto;
+}
+table.base tr>td:first-child,table.base tr>th:first-child{
+    display: inline-block;
+}
+.rich{
+    display: none;
+}
+.rich.group{
+    display: table-cell !important;
+}
+.user_show{
+}
+.user_show div.toolbar1{
+    display: none;
+}
+#user_list th{
+    text-align: left !important;
+}

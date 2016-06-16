@@ -1,0 +1,6 @@
+table.base tr>td:first-child,table.base tr>th:first-child{
+    display: table-cell;
+}
+#user_list th{
+    text-align: left !important;
+}

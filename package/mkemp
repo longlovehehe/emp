@@ -1,0 +1,75 @@
+#!/bin/sh
+
+BUILDROOT="/tmp/BUILD/EMP"
+INSPATH="/usr/local/emp"
+RUNTIME="/var/emp/runtime"
+UPLOAD="/var/emp/upload"
+BUILDPATH="${BUILDROOT}${INSPATH}"
+
+rm -rf ${BUILDROOT}
+mkdir -p ${BUILDPATH}
+mkdir -p ${BUILDROOT}${RUNTIME}
+mkdir -p ${BUILDROOT}${UPLOAD}
+mkdir ${BUILDROOT}${RUNTIME}/cache
+mkdir ${BUILDROOT}${RUNTIME}/log
+mkdir ${BUILDROOT}${RUNTIME}/tmp
+mkdir ${BUILDROOT}${RUNTIME}/template_c
+mkdir ${BUILDROOT}${UPLOAD}/doc
+mkdir ${BUILDROOT}${UPLOAD}/pic
+chmod 0777 -R ${BUILDROOT}${RUNTIME}
+chmod 0777 -R ${BUILDROOT}${UPLOAD}
+chmod 0755 tool/dbmclient
+
+cp -a private ${BUILDPATH}/
+cp -a shell ${BUILDPATH}/
+cp -a template ${BUILDPATH}/
+cp -a www ${BUILDPATH}/
+cp -a tool ${BUILDPATH}/
+cp -a static ${BUILDPATH}/
+
+filelist=`find ${BUILDPATH} -type d -name "CVS"`
+rm -rf $filelist
+rm -f ${BUILDPATH}/private/config/db.json
+
+oem=("GQT" "VT")
+echo "${oem[@]}" | grep -wq "$1"
+if [ $? == 0  ]; then
+    echo $1
+    OEM=$1
+    sed -i "s/^ident.*/ident=$1/g" ${BUILDPATH}/private/config/language.ini 
+    sed -i "s/[A-Z]*-Server/$1-Server/g" ${BUILDPATH}/static/i18n/en_US.ini
+    sed -i "s/[A-Z]*-Server/$1-Server/g" ${BUILDPATH}/static/i18n/zh_TW.ini
+    mv ${BUILDPATH}/www/images/variety/$1/favicon.ico ${BUILDPATH}/www/
+    mv ${BUILDPATH}/www/images/variety/$1/* ${BUILDPATH}/www/images/
+    rm -rf ${BUILDPATH}/www/images/variety
+elif [ "$1" != "" ]; then
+    echo "Usage like ./package/mkemp ${oem[1]} or ./package/mkemp"
+    exit 
+else 
+    OEM="GQT"
+fi   
+
+if uname -r|grep -q x86_64 ;then
+    PLATFORM="x86_64"
+else
+    PLATFORM="i386"
+fi
+echo "${PLATFORM}"
+
+#Modify RPM package buildroot and _topdir
+sed -i "s#^%_topdir.*#%_topdir\t\t%{_usrsrc}/redhat#" /usr/lib/rpm/macros
+sed -i "s#^%buildroot.*#%buildroot\t\t${BUILDROOT}#" /usr/lib/rpm/macros
+
+rpmbuild -bb package/emp.spec
+cp /usr/src/redhat/RPMS/${PLATFORM}/emp-*.${PLATFORM}.rpm package
+rm /usr/src/redhat/RPMS/${PLATFORM}/emp-*.${PLATFORM}.rpm
+
+if [ "$OEM" != "GQT" ]; then 
+    VERSION=`grep "Version:" package/emp.spec | awk -F: '{print $2}' | sed 's/^[[:space:]]\+//'`
+    RELEASE=`grep "Release:" package/emp.spec | awk -F: '{print $2}' | sed 's/^[[:space:]]\+//'`
+    file=package/emp-*.${PLATFORM}.rpm 
+    new_file=package/emp-${VERSION}-${RELEASE}_${OEM}_${PLATFORM}.rpm
+    mv ${file} ${new_file}
+    echo ${new_file}
+fi 
+
